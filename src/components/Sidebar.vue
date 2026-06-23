@@ -1,6 +1,6 @@
 <script setup>
-import { ref } from "vue";
-import { RouterLink } from "vue-router";
+import { ref, computed } from "vue";
+import { RouterLink, useRoute, useRouter } from "vue-router";
 import {
   LayoutDashboard,
   Handshake,
@@ -13,16 +13,28 @@ import {
 import { useThemeStore } from "../stores/theme.js";
 
 const themeStore = useThemeStore();
+const route = useRoute();
+const router = useRouter();
 
 const isCollapsed = ref(false);
 const isPartnersOpen = ref(true);
+
+const isWorkspaceActive = computed(() => {
+  return route.path.startsWith("/workspace");
+});
+
+const isPartnersActive = computed(() => {
+  return route.path.startsWith("/partners");
+});
 
 function toggleSidebar() {
   isCollapsed.value = !isCollapsed.value;
 }
 
 function togglePartners() {
-  if (!isCollapsed.value) {
+  if (isCollapsed.value) {
+    router.push("/partners/ibs");
+  } else {
     isPartnersOpen.value = !isPartnersOpen.value;
   }
 }
@@ -60,8 +72,12 @@ function togglePartners() {
       <div class="space-y-1">
         <RouterLink
           to="/workspace/summary"
-          class="mb-2 flex items-center gap-3 rounded-lg px-3 py-3 text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
-          active-class="bg-slate-900 text-white hover:bg-slate-900 dark:bg-indigo-600"
+          :class="[
+            'mb-2 flex items-center gap-3 rounded-lg px-3 py-3 transition-colors',
+            isWorkspaceActive
+              ? 'bg-slate-900 text-white hover:bg-slate-900 dark:bg-indigo-600'
+              : 'text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800'
+          ]"
           @click="themeStore.closeMobileSidebar"
         >
           <LayoutDashboard :size="20" />
@@ -69,7 +85,14 @@ function togglePartners() {
         </RouterLink>
 
         <button
-          class="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+          :class="[
+            'flex w-full items-center gap-3 rounded-lg px-3 py-3 transition-colors',
+            isPartnersActive
+              ? (isCollapsed
+                  ? 'bg-slate-900 text-white hover:bg-slate-900 dark:bg-indigo-600'
+                  : 'bg-indigo-50/50 text-indigo-600 font-semibold dark:bg-indigo-500/10 dark:text-indigo-400')
+              : 'text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800'
+          ]"
           @click="togglePartners"
         >
           <Handshake :size="20" />
