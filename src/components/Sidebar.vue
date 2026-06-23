@@ -49,7 +49,7 @@ function togglePartners() {
       isCollapsed ? 'md:w-20' : 'md:w-64',
     ]"
   >
-    <!-- Top Section: Logo & Navigation Links -->
+    <!-- logo -->
     <div class="flex-1">
       <!-- Mobile Drawer Header -->
       <div class="mb-6 flex items-center justify-between px-2 md:hidden">
