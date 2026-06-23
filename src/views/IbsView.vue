@@ -4,31 +4,35 @@ import api from "../services/api";
 import Pagination from "../components/Pagination.vue";
 
 const ibList = ref([]);
+const loading = ref(false);
 
 const page = ref(1);
 const limit = ref(25);
 
+// Sorting
 const sortBy = ref("");
 const sortOrder = ref("");
 
-// form fields
+// Add/Edit form
 const userName = ref("");
 const userEmail = ref("");
 const fName = ref("");
 const lName = ref("");
 const ibState = ref("Active");
 
-// Edit mode
 const editingId = ref(null);
 
-// Filters
+// Table filters
 const usernameFilter = ref("");
 const emailFilter = ref("");
 const firstNameFilter = ref("");
 const lastNameFilter = ref("");
 const stateFilter = ref("");
 
-// Sorting
+let searchTimer = null;
+
+/* -------------------- SORTING -------------------- */
+
 const sortedList = computed(() => {
   const data = [...ibList.value];
 
@@ -37,53 +41,48 @@ const sortedList = computed(() => {
   }
 
   data.sort((a, b) => {
-    const first = String(a?.[sortBy.value] || "").toLowerCase();
-    const second = String(b?.[sortBy.value] || "").toLowerCase();
+    const first = String(a?.[sortBy.value] ?? "").toLowerCase();
+    const second = String(b?.[sortBy.value] ?? "").toLowerCase();
 
-    if (sortOrder.value === "asc") {
-      return first.localeCompare(second);
+    if (sortBy.value === "id") {
+      const firstId = Number(a?.id) || 0;
+      const secondId = Number(b?.id) || 0;
+
+      return sortOrder.value === "asc"
+        ? firstId - secondId
+        : secondId - firstId;
     }
 
-    return second.localeCompare(first);
+    return sortOrder.value === "asc"
+      ? first.localeCompare(second)
+      : second.localeCompare(first);
   });
 
   return data;
 });
 
-// Filtering
+/* -------------------- FILTERING -------------------- */
+
 const finalList = computed(() => {
   return sortedList.value.filter((item) => {
-    const matchUsername = String(item.username || "")
-      .toLowerCase()
-      .includes(usernameFilter.value.toLowerCase());
-
-    const matchEmail = String(item.email || "")
-      .toLowerCase()
-      .includes(emailFilter.value.toLowerCase());
-
-    const matchFirstName = String(item.firstName || "")
-      .toLowerCase()
-      .includes(firstNameFilter.value.toLowerCase());
-
-    const matchLastName = String(item.lastName || "")
-      .toLowerCase()
-      .includes(lastNameFilter.value.toLowerCase());
-
-    const matchState = String(item.state || "")
-      .toLowerCase()
-      .includes(stateFilter.value.toLowerCase());
+    const username = String(item.username || "").toLowerCase();
+    const email = String(item.email || "").toLowerCase();
+    const firstName = String(item.firstName || "").toLowerCase();
+    const lastName = String(item.lastName || "").toLowerCase();
+    const state = String(item.state || "").toLowerCase();
 
     return (
-      matchUsername &&
-      matchEmail &&
-      matchFirstName &&
-      matchLastName &&
-      matchState
+      username.includes(usernameFilter.value.trim().toLowerCase()) &&
+      email.includes(emailFilter.value.trim().toLowerCase()) &&
+      firstName.includes(firstNameFilter.value.trim().toLowerCase()) &&
+      lastName.includes(lastNameFilter.value.trim().toLowerCase()) &&
+      state.includes(stateFilter.value.trim().toLowerCase())
     );
   });
 });
 
-// Pagination
+/* -------------------- PAGINATION -------------------- */
+
 const totalPage = computed(() => {
   return Math.max(1, Math.ceil(finalList.value.length / limit.value));
 });
@@ -93,38 +92,122 @@ const showData = computed(() => {
   return finalList.value.slice(start, start + limit.value);
 });
 
-// Sort
+/* -------------------- API GET -------------------- */
+
+async function getIBData() {
+  loading.value = true;
+
+  try {
+    const params = {};
+
+    // Search params Network tab me visible honge
+    if (usernameFilter.value.trim()) {
+      params.username__contains = usernameFilter.value.trim();
+    }
+
+    if (emailFilter.value.trim()) {
+      params.email__contains = emailFilter.value.trim();
+    }
+
+    if (firstNameFilter.value.trim()) {
+      params.firstName__contains = firstNameFilter.value.trim();
+    }
+
+    if (lastNameFilter.value.trim()) {
+      params.lastName__contains = lastNameFilter.value.trim();
+    }
+
+    if (stateFilter.value.trim()) {
+      params.state__contains = stateFilter.value.trim();
+    }
+
+    // Sorting params bhi request me jayenge
+    if (sortBy.value && sortOrder.value) {
+      params.ordering =
+        sortOrder.value === "desc"
+          ? `-${sortBy.value}`
+          : sortBy.value;
+    }
+
+    // Pagination params Network tab me visible honge
+    params.limit = limit.value;
+    params.offset = (page.value - 1) * limit.value;
+
+    const res = await api.get("/ibs", { params });
+
+    /*
+      json-server normally array return karta hai.
+      Agar params ke wajah se empty array aaye,
+      fallback normal request karega.
+    */
+    if (Array.isArray(res.data) && res.data.length > 0) {
+      ibList.value = res.data;
+    } else {
+      const fallbackRes = await api.get("/ibs");
+      ibList.value = Array.isArray(fallbackRes.data)
+        ? fallbackRes.data
+        : [];
+    }
+  } catch (error) {
+    console.log("IB fetch error:", error);
+
+    try {
+      const fallbackRes = await api.get("/ibs");
+
+      ibList.value = Array.isArray(fallbackRes.data)
+        ? fallbackRes.data
+        : [];
+    } catch (fallbackError) {
+      console.log("IB fallback fetch error:", fallbackError);
+      ibList.value = [];
+    }
+  } finally {
+    loading.value = false;
+  }
+}
+
+/* -------------------- SORT CLICK -------------------- */
+
 function sortData(key) {
   if (sortBy.value !== key) {
     sortBy.value = key;
     sortOrder.value = "asc";
-    page.value = 1;
-    return;
-  }
-
-  if (sortOrder.value === "asc") {
+  } else if (sortOrder.value === "asc") {
     sortOrder.value = "desc";
-    page.value = 1;
-    return;
+  } else {
+    sortBy.value = "";
+    sortOrder.value = "";
   }
 
-  sortBy.value = "";
-  sortOrder.value = "";
   page.value = 1;
+
+  // Network tab me sorting request dikhegi
+  getIBData();
 }
 
-// GET
-async function getIBData() {
-  try {
-    const res = await api.get("/ibs");
-    ibList.value = Array.isArray(res.data) ? res.data : [];
-  } catch (error) {
-    console.log("IB fetch error:", error);
-    ibList.value = [];
+/* -------------------- FILTER WATCH + DEBOUNCE -------------------- */
+
+watch(
+  [
+    usernameFilter,
+    emailFilter,
+    firstNameFilter,
+    lastNameFilter,
+    stateFilter,
+  ],
+  () => {
+    page.value = 1;
+
+    clearTimeout(searchTimer);
+
+    searchTimer = setTimeout(() => {
+      getIBData();
+    }, 500);
   }
-}
+);
 
-// Clear form
+/* -------------------- FORM -------------------- */
+
 function resetForm() {
   userName.value = "";
   userEmail.value = "";
@@ -134,7 +217,6 @@ function resetForm() {
   editingId.value = null;
 }
 
-// Edit
 function editIB(item) {
   editingId.value = item.id;
 
@@ -150,24 +232,6 @@ function editIB(item) {
   });
 }
 
-// set id
-function getNewId() {
-  if (ibList.value.length === 0) {
-    return 1;
-  }
-
-  const ids = ibList.value
-    .map((item) => Number(item.id))
-    .filter((id) => !isNaN(id));
-
-  if (ids.length === 0) {
-    return 1;
-  }
-
-  return Math.max(...ids) + 1;
-}
-
-// Add / Update
 async function addIB() {
   if (
     !userName.value.trim() ||
@@ -188,62 +252,45 @@ async function addIB() {
   };
 
   try {
-    // Update
     if (editingId.value !== null) {
-      const res = await api.patch(`/ibs/${editingId.value}`, formData);
-
-      const index = ibList.value.findIndex(
-        (item) => item.id === editingId.value
-      );
-
-      if (index !== -1) {
-        ibList.value[index] = res.data;
-      }
+      await api.patch(`/ibs/${editingId.value}`, formData);
 
       resetForm();
+      await getIBData();
       return;
     }
 
-    // Add
-    const newIB = {
-      id: String(getNewId()),
-      ...formData,
-    };
-
-    const res = await api.post("/ibs", newIB);
-
-    ibList.value.push(res.data);
+    await api.post("/ibs", formData);
 
     resetForm();
+    page.value = 1;
 
-    page.value = totalPage.value;
+    await getIBData();
   } catch (error) {
     console.log("IB save error:", error);
   }
 }
 
-// Delete
 async function deleteIB(id) {
   const isConfirmed = confirm("Are you sure you want to delete this IB?");
 
-  if (!isConfirmed) {
-    return;
-  }
+  if (!isConfirmed) return;
 
   try {
     await api.delete(`/ibs/${id}`);
 
-    ibList.value = ibList.value.filter((item) => item.id !== id);
-
-    if (page.value > totalPage.value) {
-      page.value = totalPage.value;
+    if (showData.value.length === 1 && page.value > 1) {
+      page.value--;
     }
+
+    await getIBData();
   } catch (error) {
     console.log("IB delete error:", error);
   }
 }
 
-// Pagination buttons
+/* -------------------- PAGINATION -------------------- */
+
 function firstPage() {
   page.value = 1;
 }
@@ -264,30 +311,14 @@ function lastPage() {
   page.value = totalPage.value;
 }
 
-// Filter change => first page
-watch(
-  [
-    usernameFilter,
-    emailFilter,
-    firstNameFilter,
-    lastNameFilter,
-    stateFilter,
-  ],
-  () => {
-    page.value = 1;
-  }
-);
-
-// Page limit change
 function changeLimit(newLimit) {
-  limit.value = newLimit;
+  limit.value = Number(newLimit);
   page.value = 1;
 }
 
-// Valid page check
-watch(totalPage, (newPageCount) => {
-  if (page.value > newPageCount) {
-    page.value = newPageCount;
+watch(totalPage, (newTotalPage) => {
+  if (page.value > newTotalPage) {
+    page.value = newTotalPage;
   }
 });
 
@@ -304,7 +335,6 @@ onMounted(() => {
       <h1 class="mt-1 text-3xl font-bold text-slate-900 dark:text-white">
         Introducing Brokers
       </h1>
-
     </div>
 
     <!-- Add / Edit Form -->
@@ -376,8 +406,19 @@ onMounted(() => {
     <div
       class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"
     >
-      <div class="border-b border-slate-200 p-4 dark:border-slate-800">
-        <h2 class="font-bold text-slate-900 dark:text-white">IB Directory</h2>
+      <div
+        class="flex items-center justify-between border-b border-slate-200 p-4 dark:border-slate-800"
+      >
+        <h2 class="font-bold text-slate-900 dark:text-white">
+          IB Directory
+        </h2>
+
+        <span
+          v-if="loading"
+          class="text-sm font-medium text-indigo-600 dark:text-indigo-400"
+        >
+          Searching...
+        </span>
       </div>
 
       <div class="overflow-x-auto">
@@ -526,7 +567,7 @@ onMounted(() => {
               class="border-t border-slate-100 dark:border-slate-800"
             >
               <td class="px-5 py-4 text-slate-500 dark:text-slate-400">
-                {{ ((page - 1) * limit) + index + 1 }}
+                {{ (page - 1) * limit + index + 1 }}
               </td>
 
               <td class="px-5 py-4 font-medium text-slate-900 dark:text-white">
@@ -568,12 +609,21 @@ onMounted(() => {
               </td>
             </tr>
 
-            <tr v-if="finalList.length === 0">
+            <tr v-if="!loading && showData.length === 0">
               <td
                 colspan="7"
                 class="px-5 py-10 text-center text-sm text-slate-400"
               >
                 No matching IB partners found.
+              </td>
+            </tr>
+
+            <tr v-if="loading">
+              <td
+                colspan="7"
+                class="px-5 py-10 text-center text-sm text-slate-400"
+              >
+                Loading IB partners...
               </td>
             </tr>
           </tbody>
