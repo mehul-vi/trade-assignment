@@ -37,7 +37,7 @@ In this project, users can manage deals and Introducing Brokers (IBs).
 First clone the project:
 
 ```bash
-git clone your-repository-link
+git clone https://github.com/mehul-vi/trade-assignment
 ```
 
 Go inside the project folder:
