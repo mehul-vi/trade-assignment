@@ -6,6 +6,7 @@ import IbsView from "../views/IbsView.vue";
 
 const routes = [
     { path: "/", redirect: "/workspace/summary" },
+    { path: "/workspace", redirect: "/workspace/summary" },
     { path: "/workspace/summary", component: WorkspaceSummary },
     { path: "/workspace/deals", component: DealsView },
     { path: "/partners/ibs", component: IbsView },
