@@ -1,0 +1,72 @@
+{
+    "deals": [
+        {
+            "id": "1",
+            "title": "Test Client 1",
+            "value": 5000,
+            "stage": "starts_conversation"
+        },
+        {
+            "id": "2",
+            "title": "Test Client 2",
+            "value": 3200,
+            "stage": "negotiation"
+        },
+        {
+            "id": "3",
+            "title": "Test Client 3",
+            "value": 6666,
+            "stage": "starts_conversation"
+        }
+    ],
+    "ibs": [
+        {
+            "id": "1",
+            "username": "test_user_01",
+            "email": "test01@example.com",
+            "firstName": "Test",
+            "lastName": "User 01",
+            "state": "Active"
+        },
+        {
+            "id": "2",
+            "username": "test_user_02",
+            "email": "test02@example.com",
+            "firstName": "Test",
+            "lastName": "User 02",
+            "state": "Inactive"
+        },
+        {
+            "id": "3",
+            "username": "test_user_03",
+            "email": "test03@example.com",
+            "firstName": "Test",
+            "lastName": "User 03",
+            "state": "Pending"
+        },
+        {
+            "id": "4",
+            "username": "test_user_04",
+            "email": "test04@example.com",
+            "firstName": "Test",
+            "lastName": "User 04",
+            "state": "Active"
+        },
+        {
+            "id": "5",
+            "username": "test_user_05",
+            "email": "test05@example.com",
+            "firstName": "Test",
+            "lastName": "User 05",
+            "state": "Inactive"
+        },
+        {
+            "id": "6",
+            "username": "test_user_06",
+            "email": "test06@example.com",
+            "firstName": "Test",
+            "lastName": "User 06",
+            "state": "Pending"
+        }
+    ]
+}
