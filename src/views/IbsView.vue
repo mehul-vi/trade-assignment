@@ -521,12 +521,12 @@ onMounted(() => {
 
           <tbody>
             <tr
-              v-for="item in showData"
+              v-for="(item, index) in showData"
               :key="item.id"
               class="border-t border-slate-100 dark:border-slate-800"
             >
               <td class="px-5 py-4 text-slate-500 dark:text-slate-400">
-                {{ item.id }}
+                {{ ((page - 1) * limit) + index + 1 }}
               </td>
 
               <td class="px-5 py-4 font-medium text-slate-900 dark:text-white">
