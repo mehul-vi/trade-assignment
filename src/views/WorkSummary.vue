@@ -192,12 +192,10 @@ const tasks = [
           </p>
 
           <h1 class="mt-1 text-xl font-bold text-slate-900 dark:text-white">
-            Welcome Back, Mehul
+            Welcome Back, User
           </h1>
 
-          <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Here’s your workspace overview. Stay productive!
-          </p>
+          
         </section>
 
         <!-- Metrics -->

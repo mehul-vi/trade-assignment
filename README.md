@@ -1,5 +1,8 @@
 # Trading Dashboard
 
+!! live link : https://trade-assignment.vercel.app/
+
+
 This is a Trading Dashboard project made using Vue.js.
 
 In this project, users can manage deals and Introducing Brokers (IBs).
